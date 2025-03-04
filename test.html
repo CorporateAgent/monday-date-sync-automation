@@ -10,6 +10,7 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+            line-height: 1.6;
         }
         .container {
             border: 1px solid #ccc;
@@ -21,6 +22,8 @@
             width: 100%;
             height: 200px;
             margin-bottom: 10px;
+            font-family: monospace;
+            padding: 10px;
         }
         button {
             background-color: #0085ff;
@@ -29,6 +32,11 @@
             padding: 10px 15px;
             border-radius: 5px;
             cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0066cc;
         }
         #response {
             white-space: pre-wrap;
@@ -36,21 +44,51 @@
             padding: 10px;
             border-radius: 5px;
             margin-top: 20px;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+        .info {
+            background-color: #e6f7ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #0085ff;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
         }
     </style>
 </head>
 <body>
     <h1>Monday.com Webhook Tester</h1>
     
+    <div class="info">
+        <h3>About This Tool</h3>
+        <p>This HTML page is a testing tool for the Monday.com Date Sync Automation webhook. It allows you to:</p>
+        <ul>
+            <li>Test if your API endpoints are accessible</li>
+            <li>Send test payloads to your webhook endpoints</li>
+            <li>View the responses from your API</li>
+        </ul>
+        <p><strong>Important:</strong> Before using this tool, update the <code>baseUrl</code> variable in the script section to point to your actual deployment URL.</p>
+    </div>
+    
     <div class="container">
         <h2>Test Endpoints</h2>
+        <p>These buttons test if your basic API endpoints are working:</p>
         <button id="testRoot">Test Root Endpoint (GET /)</button>
         <button id="testInfo">Test Info Endpoint (GET /test)</button>
     </div>
     
     <div class="container">
         <h2>Test Webhook</h2>
-        <p>Enter JSON payload to send to the webhook:</p>
+        <p>Enter JSON payload to send to the webhook. This simulates a Monday.com webhook event:</p>
         <textarea id="payload">{
   "event": {
     "type": "create_pulse",
@@ -58,6 +96,10 @@
     "boardId": "987654321"
   }
 }</textarea>
+        <p>Example payloads:</p>
+        <button id="createItemExample">Load Create Item Example</button>
+        <button id="updateColumnExample">Load Update Column Example</button>
+        <button id="createSubitemExample">Load Create Subitem Example</button>
         <div>
             <button id="sendWebhook">Send to /webhook</button>
             <button id="sendRoot">Send to /</button>
@@ -77,12 +119,58 @@
         const sendRootBtn = document.getElementById('sendRoot');
         const payloadInput = document.getElementById('payload');
         const responseOutput = document.getElementById('response');
+        const createItemExampleBtn = document.getElementById('createItemExample');
+        const updateColumnExampleBtn = document.getElementById('updateColumnExample');
+        const createSubitemExampleBtn = document.getElementById('createSubitemExample');
         
         // Base URL - change this to your Vercel deployment URL
         const baseUrl = 'https://your-vercel-app-url.vercel.app';
         
+        // Example payloads
+        const createItemPayload = {
+            "event": {
+                "type": "create_pulse",
+                "pulseId": "1234567890",
+                "boardId": "9876543210"
+            }
+        };
+        
+        const updateColumnPayload = {
+            "event": {
+                "type": "update_column_value",
+                "pulseId": "1234567890",
+                "boardId": "9876543210",
+                "columnId": "date7",
+                "value": JSON.stringify({"date": "2023-03-15"})
+            }
+        };
+        
+        const createSubitemPayload = {
+            "event": {
+                "type": "create_pulse",
+                "pulseId": "9999999999",
+                "boardId": "8888888888",
+                "parentItemId": "1234567890",
+                "parentItemBoardId": "9876543210"
+            }
+        };
+        
+        // Load example payloads
+        createItemExampleBtn.addEventListener('click', () => {
+            payloadInput.value = JSON.stringify(createItemPayload, null, 2);
+        });
+        
+        updateColumnExampleBtn.addEventListener('click', () => {
+            payloadInput.value = JSON.stringify(updateColumnPayload, null, 2);
+        });
+        
+        createSubitemExampleBtn.addEventListener('click', () => {
+            payloadInput.value = JSON.stringify(createSubitemPayload, null, 2);
+        });
+        
         // Test root endpoint
         testRootBtn.addEventListener('click', async () => {
+            responseOutput.textContent = "Sending request...";
             try {
                 const response = await fetch(`${baseUrl}/`);
                 const data = await response.json();
@@ -94,6 +182,7 @@
         
         // Test info endpoint
         testInfoBtn.addEventListener('click', async () => {
+            responseOutput.textContent = "Sending request...";
             try {
                 const response = await fetch(`${baseUrl}/test`);
                 const data = await response.json();
@@ -105,6 +194,7 @@
         
         // Send to webhook
         sendWebhookBtn.addEventListener('click', async () => {
+            responseOutput.textContent = "Sending request...";
             try {
                 const payload = JSON.parse(payloadInput.value);
                 const response = await fetch(`${baseUrl}/webhook`, {
@@ -123,6 +213,7 @@
         
         // Send to root
         sendRootBtn.addEventListener('click', async () => {
+            responseOutput.textContent = "Sending request...";
             try {
                 const payload = JSON.parse(payloadInput.value);
                 const response = await fetch(`${baseUrl}/`, {
