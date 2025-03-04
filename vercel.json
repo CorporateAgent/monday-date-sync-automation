@@ -9,6 +9,12 @@
   "routes": [
     {
       "src": "/webhook",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "main.py"
+    },
+    {
+      "src": "/test",
+      "methods": ["GET", "OPTIONS"],
       "dest": "main.py"
     },
     {
