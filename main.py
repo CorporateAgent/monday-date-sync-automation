@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 import os
 import json
+from fastapi.responses import JSONResponse
 
 # Load environment variables
 load_dotenv()
@@ -41,6 +42,23 @@ async def test_endpoint():
             "vercel_region": os.getenv("VERCEL_REGION", "unknown"),
             "timestamp": datetime.now().isoformat()
         }
+    }
+
+# Add a root GET endpoint
+@app.get("/")
+async def root():
+    """
+    Root endpoint that returns basic information about the API
+    """
+    return {
+        "name": "Monday.com Date Automation API",
+        "version": "1.0.0",
+        "endpoints": [
+            {"path": "/", "method": "GET", "description": "This information"},
+            {"path": "/test", "method": "GET", "description": "Test endpoint with environment information"},
+            {"path": "/webhook", "method": "POST", "description": "Monday.com webhook endpoint"}
+        ],
+        "status": "running"
     }
 
 async def execute_monday_query(query, variables=None):
@@ -441,6 +459,34 @@ async def sync_subitem_with_parent(webhook_data):
         import traceback
         print(f"Error syncing subitem with parent: {str(e)}")
         print(f"Traceback: {traceback.format_exc()}")
+
+@app.options("/webhook")
+async def webhook_options():
+    """
+    Handle OPTIONS requests for the webhook endpoint (CORS preflight)
+    """
+    return JSONResponse(
+        content={"message": "OK"},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        }
+    )
+
+@app.options("/")
+async def root_options():
+    """
+    Handle OPTIONS requests for the root endpoint (CORS preflight)
+    """
+    return JSONResponse(
+        content={"message": "OK"},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        }
+    )
 
 # For local development
 if __name__ == "__main__":
