@@ -24,6 +24,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add a test endpoint for debugging Vercel deployment
+@app.get("/test")
+async def test_endpoint():
+    """
+    Simple test endpoint to verify the application is running
+    Returns environment information to help with debugging
+    """
+    return {
+        "status": "ok",
+        "message": "Application is running",
+        "environment": {
+            "monday_api_key_configured": bool(MONDAY_API_KEY),
+            "python_version": os.getenv("PYTHON_VERSION", "unknown"),
+            "vercel": os.getenv("VERCEL", "0") == "1",
+            "vercel_region": os.getenv("VERCEL_REGION", "unknown"),
+            "timestamp": datetime.now().isoformat()
+        }
+    }
+
 async def execute_monday_query(query, variables=None):
     """Execute a query against the Monday.com API"""
     if not MONDAY_API_KEY:
@@ -90,11 +109,28 @@ async def monday_webhook(request: Request):
     """
     # Parse the webhook payload
     try:
-        body = await request.json()
+        # Get the raw body first for debugging
+        raw_body = await request.body()
+        print(f"Raw webhook body: {raw_body}")
+        
+        # Try to parse as JSON
+        try:
+            body = await request.json()
+        except Exception as json_error:
+            print(f"Error parsing JSON: {str(json_error)}")
+            # Try to decode the raw body as a fallback
+            try:
+                body_str = raw_body.decode('utf-8')
+                body = json.loads(body_str)
+            except Exception as decode_error:
+                print(f"Error decoding body: {str(decode_error)}")
+                raise HTTPException(status_code=400, detail=f"Invalid JSON payload: {str(json_error)}")
         
         # Log only essential webhook info
         event = body.get("event", {})
         event_type = event.get("type")
+        
+        print(f"Webhook body: {json.dumps(body, indent=2)}")
         
         # Handle challenge during webhook setup
         if "challenge" in body:
@@ -122,9 +158,17 @@ async def monday_webhook(request: Request):
         return {"status": "success"}
     except Exception as e:
         import traceback
+        error_trace = traceback.format_exc()
         print(f"Error in webhook handler: {str(e)}")
-        print(f"Traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=400, detail=f"Error processing webhook: {str(e)}")
+        print(f"Traceback: {error_trace}")
+        
+        # Return a more detailed error response
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": error_trace,
+            "timestamp": datetime.now().isoformat()
+        }
 
 async def process_date_automation(webhook_data):
     """
