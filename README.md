@@ -206,6 +206,3 @@ Use the `/test` endpoint to verify your application is running correctly and env
 
 When running locally, visit `http://localhost:8000/docs` to see the Swagger UI documentation for the API.
 
-## License
-
-MIT 
